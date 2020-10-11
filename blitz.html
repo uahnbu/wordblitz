@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+let dict;
+(async function () {
+  const text = await (await fetch('dictionary.txt')).text();
+  const splitter = String.fromCharCode(13, 10);
+  const words = text.split(splitter);
+  dict = new Set(words);
+  console.info('Dictionary loaded.');
+})();
+function blitz(letters) {
+  const grid = letters.toUpperCase().match(/..../g).map(line => line.split(''));
+  const rows = grid.length;
+  const cols = grid[0].length;
+  const words = [];
+  const search = (word, post, i, j, grid, rows, cols, words, dict) => {
+    const char = grid[i][j];
+    word += char;
+    post += (i * cols + j).toString(36);
+    word.length > 3 && dict.has(word) && (words[words.length] = [word, post]);
+    grid[i][j] = undefined;
+    i > 0 && (
+      j > 0 && grid[i - 1][j - 1] && search(word, post, i - 1, j - 1, grid, rows, cols, words, dict),
+      j < cols - 1 && grid[i - 1][j + 1] && search(word, post, i - 1, j + 1, grid, rows, cols, words, dict),
+      grid[i - 1][j] && search(word, post, i - 1, j, grid, rows, cols, words, dict)
+    );
+    j > 0 && grid[i][j - 1] && search(word, post, i, j - 1, grid, rows, cols, words, dict);
+    j < cols - 1 && grid[i][j + 1] && search(word, post, i, j + 1, grid, rows, cols, words, dict);
+    i < rows - 1 && (
+      j > 0 && grid[i + 1][j - 1] && search(word, post, i + 1, j - 1, grid, rows, cols, words, dict),
+      j < cols - 1 && grid[i + 1][j + 1] && search(word, post, i + 1, j + 1, grid, rows, cols, words, dict),
+      grid[i + 1][j] && search(word, post, i + 1, j, grid, rows, cols, words, dict)
+    );
+    grid[i][j] = char;
+  };
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      search('', '', i, j, grid, rows, cols, words, dict);
+      console.info((i * cols + j + 1) / rows / cols * 100 + '%');
+    }
+  }
+  console.info('Sorting...');
+  words.sort((a, b) => a[0].length - b[0].length);
+  const nums = '⓿❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴';
+  for (let i = 0; i < words.length; i++) {
+    const [word, path] = words[i];
+    const colors = Array(rows * cols).fill('line-height:.5em;font-size:2em;color:#000');
+    const text = Array(rows * cols).fill('%c●');
+    for (let j = 0; j < path.length; j++) {
+      const p = parseInt(path[j], 36);
+      colors[p] = colors[p].slice(0, -4) + 'hsl(' + (360 / path.length * j) + ',100%,50%)';
+      text[p] = '%c' + nums[j];
+    }
+    console.log(word)
+    console.log(text.join('').match(/.{12}/g).join('\n'), ...colors);
+  }
+}
+</script>
+</body>
+</html>
